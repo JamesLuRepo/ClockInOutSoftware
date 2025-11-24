@@ -18,7 +18,7 @@ This model supports your current goals — multi-role employees, time classifica
 
 ---
 
-## 1️⃣ **Employee Table**
+## 1️⃣ **EmployeeInfo Table**
 
 **Purpose:** Maintain employee profiles and available positions.
 
@@ -32,8 +32,10 @@ This model supports your current goals — multi-role employees, time classifica
 | **StartDate**             | Date                | 2023-05-01                                  | Employment start date.                        |
 | **EndDate**               | Date (nullable)     | —                                           | For terminated staff.                         |
 | **Email (optional)**      | Text                | [john@wokitup.com](mailto:john@wokitup.com) | Optional field for notifications.             |
-| **HourlyRate (optional)** | Number              | 25.5                                        | For future payroll integration.               |
-| **ManagerID (lookup)**    | Lookup(Employee)    | —                                           | To identify the reporting manager.            |
+| **HourlyRateWeekDay (optional)** | Number       | 25.5                                        | For future payroll integration.               |
+| **HourlyRateWeekend (optional)** | Number       | 25.5                                        | For future payroll integration.               |
+| **HourlyRatePublicHoliday (optional)** | Number | 25.5                                        | For future payroll integration.               |
+| **EmployeeClockStatus**   | Choice              | Clock In/Clock Out                            | Flag employee's clocking status.              |
 
 🧠 **Notes:**
 
@@ -49,15 +51,16 @@ This model supports your current goals — multi-role employees, time classifica
 | Field Name          | Type               | Example                                | Description                                     |
 | ------------------- | ------------------ | -------------------------------------- | ----------------------------------------------- |
 | **ClockRecordID**   | GUID (Primary Key) | CLK-000123                             | Unique record ID.                               |
-| **EmployeeID**      | Lookup(Employee)   | John Smith                             | Link to employee who clocked in/out.            |
+| **Name**            | Text  | EmployeeName & ClockInTime(Now())      | create a Name for this record including the employee name and the clockin time|
+| **EmployeeName**    | Lookup(Employee)   | John Smith                             | Link to employee who clocked in/out.            |
 | **ClockInTime**     | DateTime           | 2025-11-02 10:03                       | Clock-in timestamp.                             |
 | **ClockOutTime**    | DateTime           | 2025-11-02 18:27                       | Clock-out timestamp.                            |
 | **ShiftType**       | Choice             | Weekday / Weekend / Public Holiday     | Determined automatically.                       |
-| **BreakMinutes**    | Number             | 30                                     | Auto or manual deduction.                       |
+| ~~**BreakMinutes**~~    | Number         | 30                                 | Auto or manual deduction.                 |
 | ~~**RoundedHours**~~| Decimal            | 8.0                                    | After applying rounding rules.                  |
 | ~~**RawHours**~~    | Decimal            | 8.4                                    | Actual calculated hours.                        |
 | **DurationInHours** | Decimal            | 8.4                                    | Actual calculated hours.                        |
-| **Status**          | Choice         | ClockedIn / ClockedOut / Incomplete / Adjusted | Used for admin review.  ClockedIn: When staff clock in. ClockOut: When Staff clock out. Incomplete: When staff forget to clock out and powerautomate make it Incomplete. Adjusted: When manager adjust the record.                    |
+| **ClockRecordStatus**          | Choice         | Active / Completed | Label the record.  Active: When the employee clock in but they haven't clock out. Completed: When the employee clock out and this record is finished. We can start a new record.                    |
 | **TimesheetID**     | Lookup(Timesheet)  | —                                      | Link to weekly summary.                         |
 | **Notes**           | Text               | Missed clock-out; corrected by manager | Optional remarks.                               |
 | **CreatedBySystem** | Boolean            | true                                   | For audit tracking (manual vs automated entry). |
@@ -85,8 +88,8 @@ This model supports your current goals — multi-role employees, time classifica
 | **TotalHours**              | Decimal            | 42.5                          | Total of all categories.                |
 | **ApprovalStatus**          | Choice             | Pending / Approved / Exported | Workflow tracking.                      |
 | **ApprovedBy**              | Lookup(Employee)   | Manager                       | Approval record.                        |
-| **ExportedToXero**          | Boolean            | false                         | Mark after successful export.           |
-| **ExportDate**              | Date               | —                             | Timestamp for export.                   |
+| ~~**ExportedToXero**~~          | Boolean            | false                         | Mark after successful export.           |
+| ~~**ExportDate**~~              | Date               | —                             | Timestamp for export.                   |
 
 🧠 **Logic:**
 
@@ -105,8 +108,8 @@ This model supports your current goals — multi-role employees, time classifica
 | **Date**            | Date               | 2025-01-01      | Public holiday date.                     |
 | **Name**            | Text               | New Year’s Day  | Holiday name.                            |
 | **State/Territory** | Choice             | ACT / NSW / VIC | To handle regional differences.          |
-| **IsActive**        | Boolean            | true            | For easy filtering.                      |
-| **Source**          | Text               | Manual / API    | Origin of record (manager or auto-sync). |
+| ~~**IsActive**~~        | Boolean            | true            | For easy filtering.                      |
+| ~~**Source**~~          | Text               | Manual / API    | Origin of record (manager or auto-sync). |
 
 🧠 **Logic:**
 
@@ -270,21 +273,7 @@ This can be done in a **Power Automate weekly job**:
 | Timesheet relationship | Generate after ClockRecords weekly             |
 | Automation             | Use Power Automate to create/update Timesheets |
 
----
 
-Would you like me to draw a **visual ERD (Entity Relationship Diagram)** for this model (Employee–ClockRecord–Timesheet–HolidayList) so it’s easier to visualise in Dataverse or SharePoint schema?
-
-
-
-For the question 3: 3. What happens if there’s a ClockInTime but no ClockOutTime?
-I mean that if during their working time, how can I find the record that is the record they just clocked in? Please explain.
-
-If I generate Timesheed relationship at the end of the week, should I leave the TimesheetID column empty in ClockRecord Table when I create the record? Does that mean that I have to add this column back at the end of the week after I get a record in Timesheet Table? How can I add this column back at the end of the week? 
-
-
-
-Excellent — you’re asking **exactly the right kind of database design questions** 👍.
-Let’s break both issues carefully — the **“active clock-in record”** logic and the **Timesheet relationship update**.
 
 ---
 
@@ -407,3 +396,219 @@ If you’re using **SharePoint**:
 ---
 
 Would you like me to show you an example **Power Automate flow structure** (trigger, actions, logic) for generating and linking weekly Timesheets automatically?
+
+
+# Sketch wireframes (main screen, admin screen, summary report)
+
+# Design Power automate flow for Weekly summary
+
+Below is a **clear, step-by-step Power Automate design** for generating a **Weekly Summary** (Timesheet) from ClockRecord data.
+This design works perfectly with the data model we created earlier (Employee, ClockRecord, Timesheet).
+
+---
+
+# ✅ **Goal of the Flow**
+
+Every week (e.g., Monday at 3 AM), Power Automate should:
+
+1. Get all employees.
+2. For each employee:
+
+   * Find all ClockRecords in the previous week.
+   * Calculate weekday/weekend/public holiday hours.
+   * Sum total hours.
+3. Create a **Timesheet** record for each employee.
+4. Link each ClockRecord to its TimesheetID.
+5. (Optional) Email or store the summary.
+
+---
+
+# 🧩 **Before building the Flow**
+
+Make sure your ClockRecord table includes:
+
+| Column                                  | Type                            |
+| --------------------------------------- | ------------------------------- |
+| EmployeeID                              | Lookup                          |
+| ClockInTime                             | DateTime                        |
+| ClockOutTime                            | DateTime                        |
+| WorkDurationMinutes / Hours             | Number                          |
+| DayType (Weekday/Weekend/PublicHoliday) | Choice                          |
+| TimesheetID                             | Lookup (can be blank initially) |
+
+You do *not* need to create weekly Timesheets ahead of time.
+They will be created automatically by this weekly flow.
+
+---
+
+# 🔧 **Power Automate Flow: Step-by-Step Design**
+
+## **TRIGGER**
+
+### **1. Recurrence trigger**
+
+* Frequency: **Weekly**
+* Day: **Monday**
+* Time: e.g. **03:00 AM**
+
+This will calculate the hours for the previous Monday–Sunday.
+
+---
+
+# 🔁 **MAIN FLOW STEPS**
+
+## **2. Initialize Variables**
+
+```
+varWeekStart = startOfWeek(utcNow(), 'Monday') - 7 days
+varWeekEnd   = startOfWeek(utcNow(), 'Monday')
+```
+
+In Power Automate expression:
+
+**Week Start (previous Monday 00:00):**
+
+```fx
+startOfWeek(addDays(utcNow(), -7), 'Monday')
+```
+
+**Week End (previous Sunday 23:59):**
+
+```fx
+addSeconds(startOfWeek(utcNow(), 'Monday'), -1)
+```
+
+---
+
+## **3. Get All Employees**
+
+Use **List Rows** (Dataverse / SharePoint).
+
+---
+
+## **4. Apply to Each: Employee**
+
+Loop through all employees.
+
+Inside the loop:
+
+---
+
+## **4.1 Get ClockRecords for this employee in the week**
+
+Filter:
+
+```text
+EmployeeID eq @{items('Apply_to_each')?['employeeid']}
+and ClockInTime ge varWeekStart
+and ClockInTime le varWeekEnd
+and Status eq 'ClockedOut'
+```
+
+(We exclude incomplete shifts.)
+
+---
+
+## **4.2 Initialize summary variables**
+
+Inside the loop, create these variables:
+
+```
+varWeekdayMinutes = 0
+varWeekendMinutes = 0
+varHolidayMinutes = 0
+varTotalMinutes = 0
+```
+
+---
+
+## **4.3 Loop through each ClockRecord**
+
+Add a nested **Apply to each ClockRecord**:
+
+For each item:
+
+### **Add minutes to different buckets**
+
+```
+If DayType == 'Weekday' → add to varWeekdayMinutes
+If DayType == 'Weekend' → add to varWeekendMinutes
+If DayType == 'Public Holiday' → add to varHolidayMinutes
+Always add to varTotalMinutes
+```
+
+Expressions:
+
+```fx
+add(variables('varWeekdayMinutes'), items('Apply_to_each_record')?['WorkDurationMinutes'])
+```
+
+Repeat for other categories.
+
+---
+
+# 📄 **5. Create Timesheet Record**
+
+After finishing the loops for an employee:
+
+Create new Timesheet row with:
+
+| Field             | Value                  |
+| ----------------- | ---------------------- |
+| Employee          | employee ID            |
+| WeekStart         | varWeekStart           |
+| WeekEnd           | varWeekEnd             |
+| TotalWeekdayHours | varWeekdayMinutes / 60 |
+| TotalWeekendHours | varWeekendMinutes / 60 |
+| TotalHolidayHours | varHolidayMinutes / 60 |
+| TotalHours        | varTotalMinutes / 60   |
+
+Store the **TimesheetID** output for linking records.
+
+---
+
+# 🔗 **6. Update ClockRecords to include TimesheetID**
+
+Now update all ClockRecords from step 4.1:
+
+Use **Update Row**:
+
+```
+TimesheetID = @{outputs('Create_Timesheet')?['TimesheetID']}
+```
+
+This links every shift record to the weekly timesheet.
+
+---
+
+# 📧 **7. (Optional) Notify Manager**
+
+Send email:
+
+* Total hours per employee
+* Public holiday hours
+* Weekend hours
+* Missing clock-outs (if any)
+
+---
+
+# 🎉 **Flow is complete!**
+
+This gives you:
+
+✔ Automatically generated weekly summaries
+✔ Automatic calculation of weekday/weekend/public holiday
+✔ Clean link between ClockRecords → Timesheet
+✔ Easy export to Xero
+
+---
+
+# 🔍 Want me to generate a **diagram** for this flow?
+
+I can create:
+
+* A **Mermaid flowchart**
+* A **step-by-step blueprint diagram**
+* Or a **Power Automate-style pseudo-JSON**
+
+Just tell me which format you prefer!
